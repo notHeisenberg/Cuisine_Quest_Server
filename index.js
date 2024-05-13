@@ -39,20 +39,27 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/item/:name', async (req, res) => {
+            try {
+                const name = req.params.name
+                const query = { name }
+                // console.log(query)
+                const cursor = foodItemsCollection.find(query)
+                const result = await cursor.toArray()
+                res.send(result)
+            } catch (error) {
+                res.send(error)
+            }
+        })
+
         app.get('/items/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
+            // console.log(query)
             const result = await foodItemsCollection.findOne(query)
             res.send(result)
         })
-        app.get('/items/:name', async (req, res) => {
-            const name = req.params.name
-            // console.log(name)
-            const query = { name }
-            const cursor = foodItemsCollection.find(query)
-            const result = await cursor.toArray()
-            res.send(result)
-        })
+
 
 
         app.patch('/items/:id', async (req, res) => {
