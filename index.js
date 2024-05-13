@@ -54,12 +54,43 @@ async function run() {
             res.send(result)
         })
 
-        
+
+        app.patch('/items/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const update = req.body;
+
+            // Fields to be unset (removed)
+            // const fieldsToRemove = {
+            //     description: "",
+            //     processingTime: "",
+            //     status: "",
+            //     subcategory: ""
+            //     // Add more fields to remove here if needed
+            // };
+            const updatedCraft = {
+                $set: {
+                    name: update.name,
+                    image: update.image,
+                    catagory: update.catagory,
+                    quantity: update.quantity,
+                    price: update.price,
+                    origin: update.origin,
+                    description: update.description,
+                    purchaseCount: update.purchaseCount,
+                },
+                // $unset: fieldsToRemove // Use $unset to remove fields
+            }
+
+            const result = await foodItemsCollection.updateOne(filter, updatedCraft, options)
+            res.send(result)
+        })
+
         app.delete('/items/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await foodItemsCollection.deleteOne(query)
-            console.log(result)
             res.send(result)
         })
 
