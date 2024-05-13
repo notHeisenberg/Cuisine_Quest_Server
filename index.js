@@ -39,7 +39,7 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/item/:id', async (req, res) => {
+        app.get('/items/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await foodItemsCollection.findOne(query)
@@ -54,6 +54,24 @@ async function run() {
             res.send(result)
         })
 
+        
+        app.delete('/items/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await foodItemsCollection.deleteOne(query)
+            console.log(result)
+            res.send(result)
+        })
+
+
+        // match user and s items 
+        app.get('/items/user/:email', async (req, res) => {
+            const email = req.params.email
+            const items = await foodItemsCollection.find({ email }).toArray();
+            // console.log(crafts)
+
+            res.send(items)
+        });
 
 
         // Send a ping to confirm a successful connection
