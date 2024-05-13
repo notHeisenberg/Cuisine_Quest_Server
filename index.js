@@ -99,7 +99,6 @@ async function run() {
         app.get('/items/user/:email', async (req, res) => {
             const email = req.params.email
             const items = await foodItemsCollection.find({ email }).toArray();
-            // console.log(crafts)
 
             res.send(items)
         });
