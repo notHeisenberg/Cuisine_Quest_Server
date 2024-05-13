@@ -26,6 +26,7 @@ async function run() {
         // await client.connect();
 
         const foodItemsCollection = client.db('cuisine-quest').collection('food-items')
+        const feedBackCollection = client.db('cuisine-quest').collection('feeback')
 
         app.get('/items', async (req, res) => {
             const cursor = foodItemsCollection.find()
@@ -110,6 +111,28 @@ async function run() {
             res.send(items)
         });
 
+        // Feedback api
+        app.put('/item/feedback/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const update = req.body;
+
+
+            const feedback = {
+                $set: {
+                    displayName: update.displayName,
+                    feedbackImage: update.feedbackImage,
+                    feedBack: update.feedBack,
+                    email: update.email,
+
+                },
+                // $unset: fieldsToRemove // Use $unset to remove fields
+            }
+
+            const result = await feedBackCollection.updateOne(filter, feedback, options)
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
