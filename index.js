@@ -34,12 +34,21 @@ async function run() {
         })
 
 
-        app.get('/item-details/:id', async (req, res) => {
+        app.get('/item/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await foodItemsCollection.findOne(query)
             res.send(result)
         })
+        app.get('/items/:name', async (req, res) => {
+            const name = req.params.name
+            console.log(name)
+            const query = { name }
+            const cursor = foodItemsCollection.find(query)
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
 
 
         // Send a ping to confirm a successful connection
