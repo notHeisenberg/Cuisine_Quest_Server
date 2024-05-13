@@ -33,6 +33,11 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/items', async (req, res) => {
+            const newItem = req.body
+            const result = await foodItemsCollection.insertOne(newItem)
+            res.send(result)
+        })
 
         app.get('/item/:id', async (req, res) => {
             const id = req.params.id
@@ -42,7 +47,7 @@ async function run() {
         })
         app.get('/items/:name', async (req, res) => {
             const name = req.params.name
-            console.log(name)
+            // console.log(name)
             const query = { name }
             const cursor = foodItemsCollection.find(query)
             const result = await cursor.toArray()
