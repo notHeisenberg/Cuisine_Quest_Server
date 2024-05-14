@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require("jsonwebtoken")
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 
@@ -7,8 +8,34 @@ const app = express()
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+
+// app.use(
+//     cors({
+//         origin: [
+//             "http://localhost:5173",
+//             "cuisine-quest-5d638.web.app",
+//             "cuisine-quest-5d638.firebaseapp.com",
+//         ],
+//         credentials: true,
+//     })
+// );
+
+app.use(cors({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+}))
+
+
+
 app.use(express.json());
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
+//localhost:5000 and localhost:5173 are treated as same site.  so sameSite value must be strict in development server.  in production sameSite will be none
+// in development server secure will false .  in production secure will be true
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pgsiu4c.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -28,6 +55,25 @@ async function run() {
         const foodItemsCollection = client.db('cuisine-quest').collection('food-items')
         const feedBackCollection = client.db('cuisine-quest').collection('feeback')
         const purchasesCollection = client.db('cuisine-quest').collection('purchases');
+
+
+        //creating Token
+        app.post("/jwt", async (req, res) => {
+            const user = req.body;
+            // console.log("user for token", user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+            res.cookie("token", token, cookieOptions).send({ success: true });
+        });
+
+        //clearing Token
+        app.post("/logout", async (req, res) => {
+            const user = req.body;
+            console.log("logging out", user);
+            res
+                .clearCookie("token", { ...cookieOptions, maxAge: 0 })
+                .send({ success: true });
+        });
 
         app.get('/items', async (req, res) => {
             const cursor = foodItemsCollection.find()
@@ -51,7 +97,7 @@ async function run() {
         app.get('/items/item/:name', async (req, res) => {
             try {
                 const name = req.params.name
-                const query = { name }
+                const query = { name: { $regex: new RegExp(name, 'i') } };
                 // console.log(query)
                 const cursor = foodItemsCollection.find(query)
                 const result = await cursor.toArray()
@@ -64,7 +110,7 @@ async function run() {
 
 
 
-        app.patch('/items/:id', async (req, res) => {
+        app.put('/items/:id', async (req, res) => {
             const id = req.params.id
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true }
@@ -96,7 +142,7 @@ async function run() {
             res.send(result)
         })
 
-        app.delete('/items/:id', async (req, res) => {
+        app.post('/items/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await foodItemsCollection.deleteOne(query)
@@ -238,7 +284,7 @@ async function run() {
             }
         });
         // Delete purchase 
-        app.delete('/orders/:email/items/:itemId', async (req, res) => {
+        app.post('/orders/:email/items/:itemId', async (req, res) => {
             const { email, itemId } = req.params;
             // console.log(email, itemId)
             const query = {
@@ -253,6 +299,10 @@ async function run() {
                 res.status(500).send({ message: 'Server error', error });
             }
         });
+
+        app.post('/purchase-delete', async (req, res) => {
+            res.send({ email: req.query.email, itemId: req.query.itemId })
+        })
 
 
         // Send a ping to confirm a successful connection
