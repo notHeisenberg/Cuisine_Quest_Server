@@ -82,7 +82,7 @@ async function run() {
                 $set: {
                     name: update.name,
                     image: update.image,
-                    catagory: update.catagory,
+                    category: update.catagory,
                     quantity: update.quantity,
                     price: update.price,
                     origin: update.origin,
@@ -137,7 +137,8 @@ async function run() {
 
         // Purchase related api
         app.post('/purchase', async (req, res) => {
-            const { name, price, quantity, date, displayName, email } = req.body;
+            const { name, price, quantity, date, displayName, email, image, addedBy } = req.body;
+            // console.log(req.body)
 
             try {
                 // Find the food item by name
@@ -182,7 +183,9 @@ async function run() {
                                 price: existingPurchase.price,
                                 displayName: existingPurchase.displayName,
                                 email: existingPurchase.email,
-                                date: existingPurchase.date
+                                date: existingPurchase.date,
+                                image: existingPurchase.image,
+                                addedBy: existingPurchase.addedBy,
                             }
                         }
                     );
@@ -191,21 +194,24 @@ async function run() {
                         return res.status(500).send({ message: 'Failed to update existing purchase record' });
                     }
 
-                    // Store the purchase details in a separate collection or log
-                    else {
-                        const purchaseDetails = {
-                            name,
-                            price,
-                            quantity,
-                            displayName,
-                            email,
-                            date
-                        };
 
-                        const result = await purchasesCollection.insertOne(purchaseDetails);
+                }
+                // Store the purchase details in a separate collection or log
+                else {
+                    const purchaseDetails = {
+                        name,
+                        price,
+                        quantity,
+                        displayName,
+                        email,
+                        date,
+                        image,
+                        addedBy
+                    };
 
-                        res.send({ message: 'Purchase successful', purchaseId: result.insertedId });
-                    }
+                    const result = await purchasesCollection.insertOne(purchaseDetails);
+
+                    res.send({ message: 'Purchase successful', purchaseId: result.insertedId });
                 }
             } catch (error) {
                 console.error('Error processing purchase:', error);
@@ -229,6 +235,22 @@ async function run() {
             } catch (error) {
                 console.error('Error retrieving purchases:', error);
                 res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+        // Delete purchase 
+        app.delete('/orders/:email/items/:itemId', async (req, res) => {
+            const { email, itemId } = req.params;
+            // console.log(email, itemId)
+            const query = {
+                _id: new ObjectId(itemId),
+                email: email
+            }
+            try {
+                const result = await purchasesCollection.deleteOne(query)
+
+                res.send(result);
+            } catch (error) {
+                res.status(500).send({ message: 'Server error', error });
             }
         });
 
