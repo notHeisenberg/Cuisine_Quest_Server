@@ -167,19 +167,46 @@ async function run() {
                     return res.status(500).send({ message: 'Failed to update purchase count' });
                 }
 
-                // Store the purchase details in a separate collection or log
-                const purchaseDetails = {
-                    name,
-                    price,
-                    quantity,
-                    displayName,
-                    email,
-                    date
-                };
+                const existingPurchase = await purchasesCollection.findOne({ name, email });
 
-                const result = await purchasesCollection.insertOne(purchaseDetails);
+                if (existingPurchase) {
+                    // Update the existing purchase record
+                    const updatePurchaseResult = await purchasesCollection.updateOne(
+                        { _id: existingPurchase._id },
+                        {
+                            $inc: {
+                                quantity: quantity,
+                            },
+                            $set: {
+                                name: existingPurchase.name,
+                                price: existingPurchase.price,
+                                displayName: existingPurchase.displayName,
+                                email: existingPurchase.email,
+                                date: existingPurchase.date
+                            }
+                        }
+                    );
 
-                res.send({ message: 'Purchase successful', purchaseId: result.insertedId });
+                    if (updatePurchaseResult.modifiedCount === 0) {
+                        return res.status(500).send({ message: 'Failed to update existing purchase record' });
+                    }
+
+                    // Store the purchase details in a separate collection or log
+                    else {
+                        const purchaseDetails = {
+                            name,
+                            price,
+                            quantity,
+                            displayName,
+                            email,
+                            date
+                        };
+
+                        const result = await purchasesCollection.insertOne(purchaseDetails);
+
+                        res.send({ message: 'Purchase successful', purchaseId: result.insertedId });
+                    }
+                }
             } catch (error) {
                 console.error('Error processing purchase:', error);
                 res.status(500).send({ message: 'Internal server error' });
