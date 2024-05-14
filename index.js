@@ -27,6 +27,7 @@ async function run() {
 
         const foodItemsCollection = client.db('cuisine-quest').collection('food-items')
         const feedBackCollection = client.db('cuisine-quest').collection('feeback')
+        const purchasesCollection = client.db('cuisine-quest').collection('purchases');
 
         app.get('/items', async (req, res) => {
             const cursor = foodItemsCollection.find()
@@ -40,7 +41,14 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/item/:name', async (req, res) => {
+        app.get('/item/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            // console.log(query)
+            const result = await foodItemsCollection.findOne(query)
+            res.send(result)
+        })
+        app.get('/items/item/:name', async (req, res) => {
             try {
                 const name = req.params.name
                 const query = { name }
@@ -53,13 +61,6 @@ async function run() {
             }
         })
 
-        app.get('/items/:id', async (req, res) => {
-            const id = req.params.id
-            const query = { _id: new ObjectId(id) }
-            // console.log(query)
-            const result = await foodItemsCollection.findOne(query)
-            res.send(result)
-        })
 
 
 
@@ -133,6 +134,77 @@ async function run() {
             const result = await feedBackCollection.updateOne(filter, feedback, options)
             res.send(result)
         })
+
+        // Purchase related api
+        app.post('/purchase', async (req, res) => {
+            const { name, price, quantity, date, displayName, email } = req.body;
+
+            try {
+                // Find the food item by name
+                const foodItem = await foodItemsCollection.findOne({ name });
+
+                if (!foodItem) {
+                    return res.status(404).send({ message: 'Food item not found' });
+                }
+
+                // Check if the requested quantity is available
+                if (foodItem.quantity < quantity) {
+                    return res.status(400).send({ message: 'Requested quantity exceeds available stock' });
+                }
+
+                // Increment the purchase count
+                const updateResult = await foodItemsCollection.updateOne(
+                    { _id: foodItem._id },
+                    {
+                        $inc: {
+                            purchaseCount: 1,
+                            quantity: -quantity
+                        }
+                    }
+                );
+
+                if (updateResult.modifiedCount === 0) {
+                    return res.status(500).send({ message: 'Failed to update purchase count' });
+                }
+
+                // Store the purchase details in a separate collection or log
+                const purchaseDetails = {
+                    name,
+                    price,
+                    quantity,
+                    displayName,
+                    email,
+                    date
+                };
+
+                const result = await purchasesCollection.insertOne(purchaseDetails);
+
+                res.send({ message: 'Purchase successful', purchaseId: result.insertedId });
+            } catch (error) {
+                console.error('Error processing purchase:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        })
+
+        // User wise purchase
+        app.get('/purchases/:email', async (req, res) => {
+            const { email } = req.params;
+
+            try {
+                // Find all purchases by the user's email
+                const purchases = await purchasesCollection.find({ email }).toArray();
+
+                if (!purchases.length) {
+                    return res.status(404).send({ message: 'No purchases found for this user' });
+                }
+
+                res.send(purchases);
+            } catch (error) {
+                console.error('Error retrieving purchases:', error);
+                res.status(500).send({ message: 'Internal server error' });
+            }
+        });
+
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
