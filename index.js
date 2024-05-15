@@ -14,8 +14,8 @@ app.use(
     cors({
         origin: [
             "http://localhost:5173",
-            "cuisine-quest-5d638.web.app",
-            "cuisine-quest-5d638.firebaseapp.com",
+            "https://cuisine-quest-5d638.web.app",
+            "https://cuisine-quest-server.vercel.app",
         ],
         credentials: true,
     })
@@ -119,6 +119,7 @@ async function run() {
             const filter = { _id: new ObjectId(id) }
             const options = { upsert: true }
             const update = req.body;
+            console.log("Cookiee:", req.cookies)
 
             // Fields to be unset (removed)
             // const fieldsToRemove = {
@@ -188,7 +189,7 @@ async function run() {
         // Purchase related api
         app.post('/purchase', async (req, res) => {
             const { name, price, quantity, date, displayName, email, image, addedBy } = req.body;
-            // console.log(req.body)
+
 
             try {
                 // Find the food item by name
@@ -272,6 +273,7 @@ async function run() {
         // User wise purchase
         app.get('/purchases/:email', async (req, res) => {
             const { email } = req.params;
+            // console.log("Cookiee:", req.cookies)
 
             try {
                 // Find all purchases by the user's email
@@ -290,7 +292,6 @@ async function run() {
         // Delete purchase 
         app.post('/orders/:email/items/:itemId', async (req, res) => {
             const { email, itemId } = req.params;
-            // console.log(email, itemId)
             const query = {
                 _id: new ObjectId(itemId),
                 email: email
