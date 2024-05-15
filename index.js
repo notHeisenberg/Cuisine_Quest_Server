@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require("jsonwebtoken")
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 
@@ -9,25 +10,26 @@ const port = process.env.PORT || 5000;
 
 // middleware
 
-// app.use(
-//     cors({
-//         origin: [
-//             "http://localhost:5173",
-//             "cuisine-quest-5d638.web.app",
-//             "cuisine-quest-5d638.firebaseapp.com",
-//         ],
-//         credentials: true,
-//     })
-// );
+app.use(
+    cors({
+        origin: [
+            "http://localhost:5173",
+            "cuisine-quest-5d638.web.app",
+            "cuisine-quest-5d638.firebaseapp.com",
+        ],
+        credentials: true,
+    })
+);
 
-app.use(cors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-}))
+// app.use(cors({
+//     origin: "*",
+//     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+// }))
 
 
 
 app.use(express.json());
+app.use(cookieParser());
 
 const cookieOptions = {
     httpOnly: true,
@@ -57,6 +59,7 @@ async function run() {
         const purchasesCollection = client.db('cuisine-quest').collection('purchases');
 
 
+        // Token related api 
         //creating Token
         app.post("/jwt", async (req, res) => {
             const user = req.body;
@@ -75,6 +78,7 @@ async function run() {
                 .send({ success: true });
         });
 
+        // services
         app.get('/items', async (req, res) => {
             const cursor = foodItemsCollection.find()
             const result = await cursor.toArray()
